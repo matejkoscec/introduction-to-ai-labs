@@ -1,0 +1,15 @@
+vrijeme,temp,vlažnost,vjetar,odbojka
+suncano,visoka,visoka,slab,ne
+suncano,visoka,visoka,jak,ne
+oblacno,visoka,visoka,slab,da
+kisno,srednja,visoka,slab,da
+kisno,niska,normalna,slab,da
+kisno,niska,normalna,jak,ne
+oblacno,niska,normalna,jak,da
+suncano,srednja,visoka,slab,ne
+suncano,niska,normalna,slab,da
+kisno,srednja,normalna,slab,da
+suncano,srednja,normalna,jak,da
+oblacno,srednja,visoka,jak,da
+oblacno,visoka,normalna,slab,da
+kisno,srednja,visoka,jak,ne
