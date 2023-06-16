@@ -11,6 +11,22 @@ import java.util.stream.Collectors;
 
 public class BreadthFirstSearch implements SearchAlgorithm {
 
+    /**
+     * BFS algorithm
+     *
+     * <pre>
+     *function aStarSearch(s0, succ, goal)
+     *  open ← [initial(s0)]
+     *  closed ← ∅
+     *  while open =/= [] do
+     *      n ← removeHead(open)
+     *      if goal(state(n)) then return n
+     *      closed ← closed ∪ { n }
+     *      for m ∈ expand(n) do
+     *          insertBack(m, open)
+     *  return fail
+     * </pre>
+     */
     @Override
     public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
         final Queue<Node> open = new LinkedList<>();

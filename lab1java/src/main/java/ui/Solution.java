@@ -4,8 +4,7 @@ import ui.algorithm.SearchAlgorithm;
 import ui.algorithm.impl.AStar;
 import ui.algorithm.impl.BreadthFirstSearch;
 import ui.algorithm.impl.UniformCostSearch;
-import ui.heuristic.ConsistentHeuristic;
-import ui.heuristic.OptimisticHeuristic;
+import ui.heuristic.Heuristic;
 import ui.model.Node;
 import ui.result.SearchResult;
 
@@ -73,10 +72,10 @@ public class Solution {
             out.println(searchResult);
         }
         if (CONFIG.isCheckOptimistic()) {
-            OptimisticHeuristic.isOptimistic(graph, CONFIG);
+            Heuristic.isOptimistic(graph, CONFIG);
         }
         if (CONFIG.isCheckConsistent()) {
-            ConsistentHeuristic.isConsistent(graph, CONFIG);
+            Heuristic.isConsistent(graph, CONFIG);
         }
     }
 }

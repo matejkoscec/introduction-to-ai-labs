@@ -11,6 +11,26 @@ import java.util.stream.Collectors;
 
 public class AStar implements SearchAlgorithm {
 
+    /**
+     * A* algorithm
+     *
+     * <pre>
+     *function aStarSearch(s0, succ, goal, h)
+     *  open ← [initial(s0)]
+     *  closed ← ∅
+     *  while open =/= [] do
+     *      n ← removeHead(open)
+     *      if goal(state(n)) then return n
+     *      closed ← closed ∪ { n }
+     *      for m ∈ expand(n) do
+     *          if ∃m0 ∈ closed ∪ open such that state(m0) = state(m) then
+     *              if g(m') < g(m) then continue
+     *              else remove(m', closed ∪ open)
+     *          insertSortedBy(f, m, open)
+     *  return fail
+     *where f(n) = g(n) + h(state(n))
+     * </pre>
+     */
     @Override
     public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
         final var open = new PriorityQueue<>(Comparator.comparing(Node::getF));

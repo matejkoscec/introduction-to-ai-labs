@@ -11,6 +11,23 @@ import java.util.stream.Collectors;
 
 public class UniformCostSearch implements SearchAlgorithm {
 
+    /**
+     * UCS algorithm
+     *
+     * <pre>
+     *function aStarSearch(s0, succ, goal)
+     *  open ← [initial(s0)]
+     *  closed ← ∅
+     *  while open =/= [] do
+     *      n ← removeHead(open)
+     *      if goal(state(n)) then return n
+     *      closed ← closed ∪ { n }
+     *      for m ∈ expand(n) do
+     *          insertSortedBy(g, m, open)
+     *  return fail
+     *where f(n) = g(n) + h(state(n))
+     * </pre>
+     */
     @Override
     public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
         final var open = new PriorityQueue<>(Comparator.comparingDouble(Node::getG).thenComparing(Node::getId));
