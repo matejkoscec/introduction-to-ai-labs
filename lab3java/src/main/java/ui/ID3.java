@@ -133,8 +133,7 @@ public class ID3 {
                     entropy += -x * log2(x);
                 }
 
-                var t = occurrences.values().stream().reduce(0, Integer::sum);
-                ig -= ((double) t / D.size()) * entropy;
+                ig -= ((double) total / D.size()) * entropy;
             }
 
             igs.put(feature, ig);
