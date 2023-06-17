@@ -17,7 +17,8 @@ public final class Solution {
 		"--elitism", arg -> CONFIG.setElitism(Integer.parseInt(arg)),
 		"--p", arg -> CONFIG.setChromosomeChangeProbability(Double.parseDouble(arg)),
 		"--K", arg -> CONFIG.setGaussStdDev(Double.parseDouble(arg)),
-		"--iter", arg -> CONFIG.setIterations(Integer.parseInt(arg))
+		"--iter", arg -> CONFIG.setIterations(Integer.parseInt(arg)),
+		"--multiThreaded", arg -> CONFIG.setThreadPoolSize(Integer.parseInt(arg))
 	);
 
 	public static void main(String[] args) {

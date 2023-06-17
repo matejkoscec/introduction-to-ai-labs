@@ -5,6 +5,9 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class GeneticAlgorithm {
@@ -14,6 +17,10 @@ public class GeneticAlgorithm {
     private final Random random;
 
     private final NormalDistribution normalDistribution;
+
+    private final ExecutorService executor;
+
+    private final boolean isMultiThreaded;
 
     private List<String> header;
 
@@ -25,6 +32,8 @@ public class GeneticAlgorithm {
         this.config = config;
         this.random = new Random();
         this.normalDistribution = new NormalDistribution(0, config.getGaussStdDev());
+        this.isMultiThreaded = config.getThreadPoolSize() >= 1 && config.getThreadPoolSize() <= 10;
+        this.executor = Executors.newFixedThreadPool(isMultiThreaded ? config.getThreadPoolSize() : 1);
     }
 
     public void train(Dataset dataset) {
@@ -32,6 +41,7 @@ public class GeneticAlgorithm {
         yName = header.remove(header.size() - 1);
 
         train(dataset.data());
+        executor.shutdown();
     }
 
     private void train(List<Map<String, Double>> data) {
@@ -88,8 +98,35 @@ public class GeneticAlgorithm {
     }
 
     private void evaluate(List<NeuralNetwork> p, List<Map<String, Double>> data) {
+        if (isMultiThreaded) {
+            multiThreadedEvaluation(p, data);
+        } else {
+            singleThreadedEvaluation(p, data);
+        }
+    }
+
+    private void singleThreadedEvaluation(List<NeuralNetwork> p, List<Map<String, Double>> data) {
         for (var nn : p) {
             nn.fit(header, data, yName);
+        }
+    }
+
+    private void multiThreadedEvaluation(List<NeuralNetwork> p, List<Map<String, Double>> data) {
+        List<Callable<Void>> tasks = p.stream()
+            .map(nn -> (Callable<Void>) () -> {
+                nn.fit(header, data, yName);
+                return null;
+            })
+            .toList();
+
+        try {
+            var results = executor.invokeAll(tasks);
+            for (var result : results) {
+                result.get();
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -18,6 +18,8 @@ public final class Config {
 
     private int iterations;
 
+    private int threadPoolSize;
+
     public String getTrainFileName() {
         return trainFileName;
     }
@@ -80,6 +82,14 @@ public final class Config {
 
     public void setIterations(int iterations) {
         this.iterations = iterations;
+    }
+
+    public int getThreadPoolSize() {
+        return threadPoolSize;
+    }
+
+    public void setThreadPoolSize(int threadPoolSize) {
+        this.threadPoolSize = threadPoolSize;
     }
 
     @Override
