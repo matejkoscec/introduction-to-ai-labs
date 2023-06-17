@@ -32,7 +32,7 @@ public class GeneticAlgorithm {
         this.config = config;
         this.random = new Random();
         this.normalDistribution = new NormalDistribution(0, config.getGaussStdDev());
-        this.isMultiThreaded = config.getThreadPoolSize() >= 1 && config.getThreadPoolSize() <= 10;
+        this.isMultiThreaded = config.getThreadPoolSize() > 1 && config.getThreadPoolSize() <= 10;
         this.executor = Executors.newFixedThreadPool(isMultiThreaded ? config.getThreadPoolSize() : 1);
     }
 
