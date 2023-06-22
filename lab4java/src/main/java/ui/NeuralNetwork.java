@@ -1,6 +1,5 @@
 package ui;
 
-import org.apache.commons.math3.analysis.function.Sigmoid;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -37,14 +36,19 @@ public class NeuralNetwork {
         }
 
         var weight = createRandomRealMatrix(
-            outputLayerSize,
-            hiddenLayerSizes.get(hiddenLayerSizes.size() - 1),
-            normalDistribution
+                outputLayerSize,
+                hiddenLayerSizes.get(hiddenLayerSizes.size() - 1),
+                normalDistribution
         );
         var bias = createRandomRealMatrix(outputLayerSize, 1, normalDistribution);
 
         weights.add(weight);
         biases.add(bias);
+
+        System.out.println("weights");
+        System.out.println(format(weights));
+        System.out.println("biases");
+        System.out.println(format(biases));
     }
 
     public NeuralNetwork(List<RealMatrix> weights, List<RealMatrix> biases) {
@@ -53,7 +57,6 @@ public class NeuralNetwork {
     }
 
     public void fit(List<String> header, List<Map<String, Double>> data, String yName) {
-        var sigmoid = new Sigmoid();
         var sum = 0.0;
 
         RealMatrix y = new Array2DRowRealMatrix();
@@ -71,7 +74,7 @@ public class NeuralNetwork {
 
                 y = matrix.multiply(inputs).add(bias);
                 if (i < weights.size() - 1) {
-                    sigmoid(y, sigmoid);
+                    sigmoid(y);
                 }
             }
 
@@ -95,17 +98,16 @@ public class NeuralNetwork {
         return matrix;
     }
 
-    private void sigmoid(RealMatrix y, Sigmoid sigmoid) {
+    private void sigmoid(RealMatrix y) {
         for (var i = 0; i < y.getRowDimension(); i++) {
             for (var j = 0; j < y.getColumnDimension(); j++) {
-                var entry = y.getEntry(i, j);
-                if (entry < -10 || entry > 10) {
-                    y.setEntry(i, j, 0);
-                } else {
-                    y.setEntry(i, j, sigmoid.value(entry));
-                }
+                y.setEntry(i, j, fastSigmoid(y.getEntry(i, j)));
             }
         }
+    }
+
+    private double fastSigmoid(double x) {
+        return x / (1 + FastMath.abs(x));
     }
 
     private String format(List<RealMatrix> matrices) {
