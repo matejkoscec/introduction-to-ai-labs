@@ -86,12 +86,9 @@ public class GeneticAlgorithm {
     private List<NeuralNetwork> createStartingPopulation(int popSize) {
         final var p = new ArrayList<NeuralNetwork>();
 
+        var hiddenLayers = Arrays.stream(config.getNnArchitecture().split("s")).map(Integer::parseInt).toList();
         for (var i = 0; i < popSize; i++) {
-            p.add(new NeuralNetwork(
-                header.size(),
-                Arrays.stream(config.getNnArchitecture().split("s")).map(Integer::parseInt).toList(),
-                1
-            ));
+            p.add(new NeuralNetwork(header.size(), hiddenLayers, 1));
         }
 
         return p;

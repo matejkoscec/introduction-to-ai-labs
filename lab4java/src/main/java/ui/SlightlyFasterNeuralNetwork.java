@@ -10,71 +10,59 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class NeuralNetwork {
+public class SlightlyFasterNeuralNetwork {
 
     private final List<RealMatrix> weights;
 
-    private final List<RealMatrix> biases;
-
     private double mse;
 
-    public NeuralNetwork(int inputLayerSize, List<Integer> hiddenLayerSizes, int outputLayerSize) {
+    public SlightlyFasterNeuralNetwork(int inputLayerSize, List<Integer> hiddenLayerSizes, int outputLayerSize) {
         weights = new ArrayList<>();
-        biases = new ArrayList<>();
 
         final var normalDistribution = new NormalDistribution(0, 0.01);
         for (var i = 0; i < hiddenLayerSizes.size(); i++) {
             var rows = hiddenLayerSizes.get(i);
             var columns = i == 0 ? inputLayerSize : hiddenLayerSizes.get(i - 1);
 
-            var weight = createRandomRealMatrix(rows, columns, normalDistribution);
-            var bias = createRandomRealMatrix(rows, 1, normalDistribution);
-
+            var weight = createRandomRealMatrix(rows + 1, columns + 1, normalDistribution);
             weights.add(weight);
-            biases.add(bias);
         }
 
         var weight = createRandomRealMatrix(
-                outputLayerSize,
-                hiddenLayerSizes.get(hiddenLayerSizes.size() - 1),
+                outputLayerSize + 1,
+                hiddenLayerSizes.get(hiddenLayerSizes.size() - 1) + 1,
                 normalDistribution
         );
-        var bias = createRandomRealMatrix(outputLayerSize, 1, normalDistribution);
 
         weights.add(weight);
-        biases.add(bias);
 
         // System.out.println("weights");
         // System.out.println(format(weights));
-        // System.out.println("biases");
-        // System.out.println(format(biases));
     }
 
-    public NeuralNetwork(List<RealMatrix> weights, List<RealMatrix> biases) {
+    public SlightlyFasterNeuralNetwork(List<RealMatrix> weights) {
         this.weights = weights;
-        this.biases = biases;
     }
 
     public void fit(List<String> header, List<Map<String, Double>> data, String yName) {
         var sum = 0.0;
 
         for (var row : data) {
-            var startInputs = MatrixUtils.createRealMatrix(header.size(), 1);
+            var startInputs = MatrixUtils.createRealMatrix(header.size() + 1, 1);
             for (var i = 0; i < header.size(); i++) {
                 startInputs.setEntry(i, 0, row.get(header.get(i)));
             }
+            startInputs.setEntry(header.size(), 0, 1.0);
 
             var matrix = weights.get(0);
-            var bias = biases.get(0);
 
-            var y = matrix.multiply(startInputs).add(bias);
+            var y = matrix.multiply(startInputs);
             sigmoid(y);
 
             for (int i = 1; i < weights.size(); i++) {
                 matrix = weights.get(i);
-                bias = biases.get(i);
 
-                y = matrix.multiply(y).add(bias);
+                y = matrix.multiply(y);
                 if (i < weights.size() - 1) {
                     sigmoid(y);
                 }
@@ -95,6 +83,9 @@ public class NeuralNetwork {
             for (var j = 0; j < matrix.getColumnDimension(); j++) {
                 matrix.setEntry(i, j, normalDistribution.sample());
             }
+        }
+        for (var j = 0; j < matrix.getColumnDimension(); j++) {
+            matrix.setEntry(matrix.getRowDimension() - 1, j, 1.0);
         }
 
         return matrix;
@@ -137,10 +128,6 @@ public class NeuralNetwork {
 
     public List<RealMatrix> getWeights() {
         return weights;
-    }
-
-    public List<RealMatrix> getBiases() {
-        return biases;
     }
 
     public double getMse() {
