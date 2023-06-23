@@ -67,16 +67,18 @@ public class NeuralNetwork {
             var matrix = weights.get(0);
             var bias = biases.get(0);
 
-            var y = matrix.multiply(startInputs).add(bias);
-            sigmoid(y);
+            var y = matrix.multiply(startInputs);
+            addBiasAndApplySigmoid(y, bias);
 
             for (int i = 1; i < weights.size(); i++) {
                 matrix = weights.get(i);
                 bias = biases.get(i);
 
-                y = matrix.multiply(y).add(bias);
                 if (i < weights.size() - 1) {
-                    sigmoid(y);
+                    y = matrix.multiply(y);
+                    addBiasAndApplySigmoid(y, bias);
+                } else {
+                    y = matrix.multiply(y).add(bias);
                 }
             }
 
@@ -100,10 +102,10 @@ public class NeuralNetwork {
         return matrix;
     }
 
-    private void sigmoid(RealMatrix y) {
+    private void addBiasAndApplySigmoid(RealMatrix y, RealMatrix bias) {
         for (var i = 0; i < y.getRowDimension(); i++) {
             for (var j = 0; j < y.getColumnDimension(); j++) {
-                y.setEntry(i, j, fastSigmoid(y.getEntry(i, j)));
+                y.setEntry(i, j, fastSigmoid(y.getEntry(i, j) + bias.getEntry(i, 0)));
             }
         }
     }

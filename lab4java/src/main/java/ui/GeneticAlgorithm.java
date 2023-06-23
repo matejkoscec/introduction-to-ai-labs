@@ -96,30 +96,24 @@ public class GeneticAlgorithm {
 
     private void evaluate(List<NeuralNetwork> p, List<Map<String, Double>> data) {
         if (isMultiThreaded) {
-            multiThreadedEvaluation(p, data);
+            multiThreadedEvaluation(p.stream()
+                .map(nn -> (Callable<Void>) () -> {
+                    nn.fit(header, data, yName);
+                    return null;
+                })
+                .toList()
+            );
         } else {
-            singleThreadedEvaluation(p, data);
-        }
-    }
-
-    private void singleThreadedEvaluation(List<NeuralNetwork> p, List<Map<String, Double>> data) {
-        for (var nn : p) {
-            nn.fit(header, data, yName);
-        }
-    }
-
-    private void multiThreadedEvaluation(List<NeuralNetwork> p, List<Map<String, Double>> data) {
-        List<Callable<Void>> tasks = p.stream()
-            .map(nn -> (Callable<Void>) () -> {
+            for (var nn : p) {
                 nn.fit(header, data, yName);
-                return null;
-            })
-            .toList();
+            }
+        }
+    }
 
+    private void multiThreadedEvaluation(List<Callable<Void>> tasks) {
         try {
-            var results = executor.invokeAll(tasks);
-            for (var result : results) {
-                result.get();
+            for (var future : executor.invokeAll(tasks)) {
+                future.get();
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -173,17 +167,19 @@ public class GeneticAlgorithm {
     }
 
     private void mutate(NeuralNetwork c) {
-        mutate(c.getBiases());
-        mutate(c.getWeights());
+        for (var i = 0; i < c.getWeights().size(); i++) {
+            var matrix = c.getWeights().get(i);
+            var bias = c.getBiases().get(i);
+            mutate(matrix);
+            mutate(bias);
+        }
     }
 
-    private void mutate(List<RealMatrix> matrices) {
-        for (var matrix : matrices) {
-            for (var i = 0; i < matrix.getRowDimension(); i++) {
-                for (var j = 0; j < matrix.getColumnDimension(); j++) {
-                    if (random.nextDouble() <= config.getChromosomeChangeProbability()) {
-                        matrix.setEntry(i, j, matrix.getEntry(i, j) + normalDistribution.sample());
-                    }
+    private void mutate(RealMatrix matrix) {
+        for (var i = 0; i < matrix.getRowDimension(); i++) {
+            for (var j = 0; j < matrix.getColumnDimension(); j++) {
+                if (random.nextDouble() <= config.getChromosomeChangeProbability()) {
+                    matrix.setEntry(i, j, matrix.getEntry(i, j) + normalDistribution.sample());
                 }
             }
         }
