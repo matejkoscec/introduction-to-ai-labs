@@ -33,15 +33,21 @@ public class GeneticAlgorithm {
         this.random = new Random();
         this.normalDistribution = new NormalDistribution(0, config.getGaussStdDev());
         this.isMultiThreaded = config.getThreadPoolSize() > 1 && config.getThreadPoolSize() <= 10;
-        this.executor = Executors.newFixedThreadPool(isMultiThreaded ? config.getThreadPoolSize() : 1);
+        this.executor = isMultiThreaded ? Executors.newFixedThreadPool(config.getThreadPoolSize()) : null;
     }
 
     public void train(Dataset dataset) {
         header = new ArrayList<>(dataset.header());
         yName = header.remove(header.size() - 1);
 
-        train(dataset.data());
-        executor.shutdown();
+        try {
+            train(dataset.data());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (isMultiThreaded) {
+            executor.shutdown();
+        }
     }
 
     private void train(List<Map<String, Double>> data) {
@@ -168,10 +174,8 @@ public class GeneticAlgorithm {
 
     private void mutate(NeuralNetwork c) {
         for (var i = 0; i < c.getWeights().size(); i++) {
-            var matrix = c.getWeights().get(i);
-            var bias = c.getBiases().get(i);
-            mutate(matrix);
-            mutate(bias);
+            mutate(c.getWeights().get(i));
+            mutate(c.getBiases().get(i));
         }
     }
 

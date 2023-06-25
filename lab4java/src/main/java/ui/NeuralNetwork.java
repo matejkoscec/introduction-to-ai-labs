@@ -82,9 +82,8 @@ public class NeuralNetwork {
                 }
             }
 
-            var actualY = row.get(yName);
-            var yVal = y.getEntry(0, 0);
-            sum += FastMath.pow(actualY - yVal, 2);
+            var val = row.get(yName) - y.getEntry(0, 0);
+            sum += val * val;
         }
 
         mse = (1.0 / data.size()) * sum;
