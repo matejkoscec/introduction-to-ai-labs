@@ -7,8 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class DataLoader {
 
@@ -21,18 +19,14 @@ public class DataLoader {
     public Dataset readDataset(String fileName) {
         final var file = readFile(fileName);
 
-        final var header = Arrays.stream(file.remove(0).split(",")).toList();
+        final var header = file.remove(0).split(",");
 
         final var data = file.stream()
             .map(line -> Arrays.stream(line.split(","))
-                .map(Double::parseDouble)
-                .toList()
+                .mapToDouble(Double::parseDouble)
+                .toArray()
             )
-            .map(line -> IntStream.range(0, header.size())
-                .boxed()
-                .collect(Collectors.toMap(header::get, line::get))
-            )
-            .toList();
+            .toArray(double[][]::new);
 
         return new Dataset(header, data);
     }

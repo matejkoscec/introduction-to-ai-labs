@@ -22,9 +22,7 @@ public class GeneticAlgorithm {
 
     private final boolean isMultiThreaded;
 
-    private List<String> header;
-
-    private String yName;
+    private String[] header;
 
     private NeuralNetwork min;
 
@@ -37,8 +35,7 @@ public class GeneticAlgorithm {
     }
 
     public void train(Dataset dataset) {
-        header = new ArrayList<>(dataset.header());
-        yName = header.remove(header.size() - 1);
+        header = dataset.header();
 
         try {
             train(dataset.data());
@@ -50,7 +47,7 @@ public class GeneticAlgorithm {
         }
     }
 
-    private void train(List<Map<String, Double>> data) {
+    private void train(double[][] data) {
         var p = createStartingPopulation(config.getPopSize());
         evaluate(p, data);
         for (var i = 0; i < config.getIterations(); i++) {
@@ -68,8 +65,7 @@ public class GeneticAlgorithm {
                 .collect(Collectors.toList());
             while (pNew.size() < config.getPopSize()) {
                 var selected = select(p);
-                var c = cross(selected.get(0), selected.get(1));
-                mutate(c);
+                var c = crossAndMutate(selected.p1(), selected.p2());
                 pNew.add(c);
             }
             p = pNew;
@@ -85,7 +81,7 @@ public class GeneticAlgorithm {
     }
 
     public void test(Dataset testDataset) {
-        min.fit(header, testDataset.data(), yName);
+        min.fit(header, testDataset.data());
         System.out.printf(Locale.US, "[Test error]: %.6f%n", min.getMse());
     }
 
@@ -94,24 +90,24 @@ public class GeneticAlgorithm {
 
         var hiddenLayers = Arrays.stream(config.getNnArchitecture().split("s")).map(Integer::parseInt).toList();
         for (var i = 0; i < popSize; i++) {
-            p.add(new NeuralNetwork(header.size(), hiddenLayers, 1));
+            p.add(new NeuralNetwork(header.length - 1, hiddenLayers, 1));
         }
 
         return p;
     }
 
-    private void evaluate(List<NeuralNetwork> p, List<Map<String, Double>> data) {
+    private void evaluate(List<NeuralNetwork> p, double[][] data) {
         if (isMultiThreaded) {
             multiThreadedEvaluation(p.stream()
                 .map(nn -> (Callable<Void>) () -> {
-                    nn.fit(header, data, yName);
+                    nn.fit(header, data);
                     return null;
                 })
                 .toList()
             );
         } else {
             for (var nn : p) {
-                nn.fit(header, data, yName);
+                nn.fit(header, data);
             }
         }
     }
@@ -127,7 +123,9 @@ public class GeneticAlgorithm {
         }
     }
 
-    private List<NeuralNetwork> select(List<NeuralNetwork> p) {
+    record Tuple(NeuralNetwork p1, NeuralNetwork p2) {}
+
+    private Tuple select(List<NeuralNetwork> p) {
         var sum = p.stream().mapToDouble(NeuralNetwork::getMse).reduce(0.0, (acc, num) -> acc + (1 / num));
 
         var randomNum = sum * random.nextDouble();
@@ -145,47 +143,35 @@ public class GeneticAlgorithm {
         }
         var p2 = p.get(i);
 
-        return List.of(p1, p2);
+        return new Tuple(p1, p2);
     }
 
-    private NeuralNetwork cross(NeuralNetwork p1, NeuralNetwork p2) {
-        var biases = new ArrayList<RealMatrix>();
-        var weights = new ArrayList<RealMatrix>();
+    private NeuralNetwork crossAndMutate(NeuralNetwork p1, NeuralNetwork p2) {
+        var biases = new RealMatrix[p1.getBiases().length];
+        var weights = new RealMatrix[p1.getWeights().length];
 
-        for (var i = 0; i < p1.getBiases().size(); i++) {
-            biases.add(mean(p1.getBiases().get(i), p2.getBiases().get(i)));
-            weights.add(mean(p1.getWeights().get(i), p2.getWeights().get(i)));
+        for (var i = 0; i < p1.getWeights().length; i++) {
+            biases[i] = (meanAndMutate(p1.getBiases()[i], p2.getBiases()[i]));
+            weights[i] = (meanAndMutate(p1.getWeights()[i], p2.getWeights()[i]));
         }
 
         return new NeuralNetwork(weights, biases);
     }
 
-    private RealMatrix mean(RealMatrix m1, RealMatrix m2) {
+    private RealMatrix meanAndMutate(RealMatrix m1, RealMatrix m2) {
         var matrix = MatrixUtils.createRealMatrix(m1.getRowDimension(), m1.getColumnDimension());
 
         for (var i = 0; i < m1.getRowDimension(); i++) {
             for (var j = 0; j < m1.getColumnDimension(); j++) {
-                matrix.setEntry(i, j, (m1.getEntry(i, j) + m2.getEntry(i, j)) / 2);
+                var mean = (m1.getEntry(i, j) + m2.getEntry(i, j)) / 2;
+                if (random.nextDouble() < config.getChromosomeChangeProbability()) {
+                    matrix.setEntry(i, j, mean + normalDistribution.sample());
+                } else {
+                    matrix.setEntry(i, j, mean);
+                }
             }
         }
 
         return matrix;
-    }
-
-    private void mutate(NeuralNetwork c) {
-        for (var i = 0; i < c.getWeights().size(); i++) {
-            mutate(c.getWeights().get(i));
-            mutate(c.getBiases().get(i));
-        }
-    }
-
-    private void mutate(RealMatrix matrix) {
-        for (var i = 0; i < matrix.getRowDimension(); i++) {
-            for (var j = 0; j < matrix.getColumnDimension(); j++) {
-                if (random.nextDouble() <= config.getChromosomeChangeProbability()) {
-                    matrix.setEntry(i, j, matrix.getEntry(i, j) + normalDistribution.sample());
-                }
-            }
-        }
     }
 }
