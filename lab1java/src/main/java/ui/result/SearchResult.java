@@ -42,7 +42,7 @@ public class SearchResult {
             }
             var node = path.get(i);
             var next = path.get(i + 1);
-            sum += node.getConnectedNodeCostById(next.getId());
+            sum += node.getConnectedNodeCost(next);
         }
         return sum;
     }

@@ -28,39 +28,39 @@ public class BreadthFirstSearch implements SearchAlgorithm {
      * </pre>
      */
     @Override
-    public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
+    public SearchResult find(Node s0, Function<Node, Collection<Node>> succ, Predicate<Node> goal) {
         final Queue<Node> open = new LinkedList<>();
         open.add(s0);
-        final var visited = new HashMap<String, Node>();
+        final var visited = new HashSet<String>();
 
         while (!open.isEmpty()) {
             var n = open.remove();
             if (goal.test(n)) {
-                return success(n, visited);
+                return success(n, visited.size());
             }
-            visited.put(n.getId(), n);
+            visited.add(n.getId());
             for (var m : expand(n, succ)) {
-                if (!visited.containsKey(m.getId())) {
+                if (!visited.contains(m.getId())) {
                     open.add(m);
                 }
             }
         }
 
-        return fail(null, visited);
+        return fail(null, visited.size());
     }
 
     @Override
-    public SearchResult success(Node n, Map<String, Node> visited) {
-        return new SearchResult("BFS", true, visited.size() + 1, n);
+    public SearchResult success(Node n, int statesVisited) {
+        return new SearchResult("BFS", true, statesVisited + 1, n);
     }
 
     @Override
-    public SearchResult fail(Node n, Map<String, Node> visited) {
-        return new SearchResult("BFS", false, visited.size(), n);
+    public SearchResult fail(Node n, int statesVisited) {
+        return new SearchResult("BFS", false, statesVisited, n);
     }
 
     @Override
-    public List<Node> expand(Node n, Function<Node, List<Node>> succ) {
+    public List<Node> expand(Node n, Function<Node, Collection<Node>> succ) {
         return succ.apply(n).stream()
             .map(node -> {
                 final var newNode = new Node(node.getId());

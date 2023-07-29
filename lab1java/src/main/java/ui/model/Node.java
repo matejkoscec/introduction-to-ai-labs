@@ -21,12 +21,8 @@ public class Node {
         this.id = id;
     }
 
-    public double getConnectedNodeCostById(String id) {
-        return connectedNodes.entrySet().stream()
-            .filter(entry -> entry.getKey().getId().equals(id))
-            .findFirst()
-            .orElseThrow()
-            .getValue();
+    public double getConnectedNodeCost(Node connectedNode) {
+        return connectedNodes.get(connectedNode);
     }
 
     public List<Node> tracePath() {
@@ -97,5 +93,22 @@ public class Node {
                ", parent=" + (parent != null ? parent.getId() : "null") +
                ", heuristicValue=" + heuristicValue +
                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Node node = (Node) o;
+        return Objects.equals(id, node.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

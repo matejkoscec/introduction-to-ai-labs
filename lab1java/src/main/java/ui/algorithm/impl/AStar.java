@@ -32,7 +32,7 @@ public class AStar implements SearchAlgorithm {
      * </pre>
      */
     @Override
-    public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
+    public SearchResult find(Node s0, Function<Node, Collection<Node>> succ, Predicate<Node> goal) {
         final var open = new PriorityQueue<>(Comparator.comparing(Node::getF));
         open.add(s0);
         final var visited = new HashMap<String, Node>();
@@ -40,7 +40,7 @@ public class AStar implements SearchAlgorithm {
         while (!open.isEmpty()) {
             var n = open.remove();
             if (goal.test(n)) {
-                return success(n, visited);
+                return success(n, visited.size());
             }
             visited.put(n.getId(), n);
             for (var m : expand(n, succ)) {
@@ -56,7 +56,7 @@ public class AStar implements SearchAlgorithm {
             }
         }
 
-        return fail(null, visited);
+        return fail(null, visited.size());
     }
 
     public void remove(Node m_, Queue<Node> open, Map<String, Node> visited) {
@@ -74,24 +74,24 @@ public class AStar implements SearchAlgorithm {
     }
 
     @Override
-    public SearchResult success(Node n, Map<String, Node> visited) {
-        return new SearchResult("ASTAR", true, visited.size() + 1, n);
+    public SearchResult success(Node n, int statesVisited) {
+        return new SearchResult("ASTAR", true, statesVisited + 1, n);
     }
 
     @Override
-    public SearchResult fail(Node n, Map<String, Node> visited) {
-        return new SearchResult("ASTAR", false, visited.size(), n);
+    public SearchResult fail(Node n, int statesVisited) {
+        return new SearchResult("ASTAR", false, statesVisited, n);
     }
 
     @Override
-    public List<Node> expand(Node n, Function<Node, List<Node>> succ) {
+    public List<Node> expand(Node n, Function<Node, Collection<Node>> succ) {
         return succ.apply(n).stream()
             .map(node -> {
                 final var newNode = new Node(node.getId());
                 newNode.setConnectedNodes(node.getConnectedNodes());
                 newNode.setParent(n);
                 newNode.setHeuristicValue(node.getHeuristicValue());
-                newNode.setG(n.getConnectedNodeCostById(node.getId()) + n.getG());
+                newNode.setG(n.getConnectedNodeCost(node) + n.getG());
                 newNode.setF(newNode.getG() + newNode.getHeuristicValue());
                 return newNode;
             })

@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UniformCostSearch implements SearchAlgorithm {
 
@@ -29,46 +30,46 @@ public class UniformCostSearch implements SearchAlgorithm {
      * </pre>
      */
     @Override
-    public SearchResult find(Node s0, Function<Node, List<Node>> succ, Predicate<Node> goal) {
+    public SearchResult find(Node s0, Function<Node, Collection<Node>> succ, Predicate<Node> goal) {
         final var open = new PriorityQueue<>(Comparator.comparingDouble(Node::getG).thenComparing(Node::getId));
         open.add(s0);
-        final var visited = new HashMap<String, Node>();
+        final var visited = new HashSet<String>();
 
         while (!open.isEmpty()) {
             var n = open.remove();
             if (goal.test(n)) {
-                return success(n, visited);
+                return success(n, visited.size());
             }
-            visited.put(n.getId(), n);
+            visited.add(n.getId());
             for (var m : expand(n, succ)) {
-                if (!visited.containsKey(m.getId())) {
+                if (!visited.contains(m.getId())) {
                     open.add(m);
                 }
             }
         }
 
-        return fail(null, visited);
+        return fail(null, visited.size());
     }
 
     @Override
-    public SearchResult success(Node n, Map<String, Node> visited) {
-        return new SearchResult("UCS", true, visited.size() + 1, n);
+    public SearchResult success(Node n, int statesVisited) {
+        return new SearchResult("UCS", true, statesVisited + 1, n);
     }
 
     @Override
-    public SearchResult fail(Node n, Map<String, Node> visited) {
-        return new SearchResult("UCS", false, visited.size(), n);
+    public SearchResult fail(Node n, int statesVisited) {
+        return new SearchResult("UCS", false, statesVisited, n);
     }
 
     @Override
-    public List<Node> expand(Node n, Function<Node, List<Node>> succ) {
+    public List<Node> expand(Node n, Function<Node, Collection<Node>> succ) {
         return succ.apply(n).stream()
             .map(node -> {
                 final var newNode = new Node(node.getId());
                 newNode.setConnectedNodes(node.getConnectedNodes());
                 newNode.setParent(n);
                 newNode.setHeuristicValue(node.getHeuristicValue());
-                newNode.setG(n.getConnectedNodeCostById(node.getId()) + n.getG());
+                newNode.setG(n.getConnectedNodeCost(node) + n.getG());
                 return newNode;
             })
             .collect(Collectors.toList());

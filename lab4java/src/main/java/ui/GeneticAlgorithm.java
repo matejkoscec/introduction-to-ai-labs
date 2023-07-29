@@ -98,12 +98,11 @@ public class GeneticAlgorithm {
 
     private void evaluate(List<NeuralNetwork> p, double[][] data) {
         if (isMultiThreaded) {
-            multiThreadedEvaluation(p.stream()
-                .map(nn -> (Callable<Void>) () -> {
+            multiThreadedEvaluation(
+                p.stream().map(nn -> (Callable<Void>) () -> {
                     nn.fit(header, data);
                     return null;
-                })
-                .toList()
+                }).toList()
             );
         } else {
             for (var nn : p) {
