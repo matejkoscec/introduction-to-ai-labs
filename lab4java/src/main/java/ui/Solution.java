@@ -2,8 +2,6 @@ package ui;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 
 public final class Solution {
@@ -32,10 +30,9 @@ public final class Solution {
 
     public static void main(String[] args) {
         final var start = System.currentTimeMillis();
-        multiThreadedEvaluation(TESTS.stream().map(test -> (Callable<Void>) () -> {
+        for (var test : TESTS) {
             run(test.split(" "));
-            return null;
-        }).toList());
+        }
         System.out.println("Delta: " + (System.currentTimeMillis() - start) + "ms");
     }
 
@@ -54,17 +51,5 @@ public final class Solution {
         final var geneticAlgorithm = new GeneticAlgorithm(config);
         geneticAlgorithm.train(dataset);
         geneticAlgorithm.test(testDataset);
-    }
-
-    private static void multiThreadedEvaluation(List<Callable<Void>> tasks) {
-        try (final var executor = Executors.newFixedThreadPool(TESTS.size())) {
-            for (var future : executor.invokeAll(tasks)) {
-                future.get();
-            }
-            executor.shutdown();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            Thread.currentThread().interrupt();
-        }
     }
 }

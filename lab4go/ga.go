@@ -28,8 +28,7 @@ func RunGeneticAlgorithm(header []string, data [][]float64, config *Config) *Neu
 		pNew := applyElitism(p, config.Elitism)
 		for len(pNew) < config.PopSize {
 			p1, p2 := selectParents(p, random)
-			c := cross(p1, p2)
-			mutate(c, config.ChromosomeChangeProb, norm, random)
+			c := crossAndMutate(p1, p2, config.ChromosomeChangeProb, norm, random)
 			pNew = append(pNew, c)
 		}
 		p = pNew
@@ -56,7 +55,7 @@ func createStartingPopulation(header []string, popSize int, arch string) []*Neur
 			layers[j+1] = hiddenLayers[j]
 		}
 		layers[len(layers)-1] = 1
-		population[i] = NewNeuralNetwork(layers)
+		population[i] = NewNeuralNetwork(layers, header)
 	}
 
 	return population
@@ -106,6 +105,13 @@ func selectParents(p []*NeuralNetwork, random *rand.Rand) (*NeuralNetwork, *Neur
 		sum += 1 / nn.Mse
 	}
 
+	parent1 := rouletteWheelSelection(p, random, sum)
+	parent2 := rouletteWheelSelection(p, random, sum)
+
+	return parent1, parent2
+}
+
+func rouletteWheelSelection(p []*NeuralNetwork, random *rand.Rand, sum float64) *NeuralNetwork {
 	randomNumber := random.Float64() * sum
 	checkSum := 0.0
 	i := -1
@@ -113,33 +119,28 @@ func selectParents(p []*NeuralNetwork, random *rand.Rand) (*NeuralNetwork, *Neur
 		i++
 		checkSum += 1 / p[i].Mse
 	}
-	parent1 := p[i]
 
-	randomNumber = random.Float64() * sum
-	checkSum = 0.0
-	i = -1
-	for checkSum < randomNumber {
-		i++
-		checkSum += 1 / p[i].Mse
-	}
-	parent2 := p[i]
-
-	return parent1, parent2
+	return p[i]
 }
 
-func cross(p1 *NeuralNetwork, p2 *NeuralNetwork) *NeuralNetwork {
+func crossAndMutate(p1 *NeuralNetwork, p2 *NeuralNetwork, prob float64, norm distuv.Normal, random *rand.Rand) *NeuralNetwork {
 	weights := make([]*mat.Dense, len(p1.Weights))
 	biases := make([]*mat.Dense, len(p1.Biases))
+	preCalc := make([]*mat.Dense, len(p1.PreCalc))
 
 	for i := 0; i < len(p1.Weights); i++ {
-		weights[i] = mean(p1.Weights[i], p2.Weights[i])
-		biases[i] = mean(p1.Biases[i], p2.Biases[i])
+		weights[i] = meanAndMutate(p1.Weights[i], p2.Weights[i], prob, norm, random)
+		biases[i] = meanAndMutate(p1.Biases[i], p2.Biases[i], prob, norm, random)
+	}
+	for i := 0; i < len(preCalc); i++ {
+		rows, cols := p1.PreCalc[i].Dims()
+		preCalc[i] = mat.NewDense(rows, cols, nil)
 	}
 
-	return NeuralNetworkWith(weights, biases)
+	return NeuralNetworkWith(weights, biases, preCalc)
 }
 
-func mean(m1 *mat.Dense, m2 *mat.Dense) *mat.Dense {
+func meanAndMutate(m1 *mat.Dense, m2 *mat.Dense, prob float64, norm distuv.Normal, random *rand.Rand) *mat.Dense {
 	rows, cols := m1.Dims()
 	matrix := mat.NewDense(rows, cols, nil)
 	data1 := m1.RawMatrix().Data
@@ -148,30 +149,14 @@ func mean(m1 *mat.Dense, m2 *mat.Dense) *mat.Dense {
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			index := i*cols + j
-			matrix.Set(i, j, (data1[index]+data2[index])/2)
+			meanVal := (data1[index] + data2[index]) / 2
+			if random.Float64() < prob {
+				matrix.Set(i, j, meanVal+norm.Rand())
+			} else {
+				matrix.Set(i, j, meanVal)
+			}
 		}
 	}
 
 	return matrix
-}
-
-func mutate(nn *NeuralNetwork, prob float64, norm distuv.Normal, random *rand.Rand) {
-	for i := 0; i < len(nn.Weights); i++ {
-		mutateMatrix(nn.Weights[i], prob, norm, random)
-		mutateMatrix(nn.Biases[i], prob, norm, random)
-	}
-}
-
-func mutateMatrix(m *mat.Dense, prob float64, norm distuv.Normal, random *rand.Rand) {
-	rows, cols := m.Dims()
-	data := m.RawMatrix().Data
-
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			if random.Float64() < prob {
-				index := i*cols + j
-				data[index] += norm.Rand()
-			}
-		}
-	}
 }
