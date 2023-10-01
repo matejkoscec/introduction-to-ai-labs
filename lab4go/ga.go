@@ -12,12 +12,15 @@ import (
 	"time"
 )
 
+var (
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
 func RunGeneticAlgorithm(header []string, data [][]float64, config *Config) *NeuralNetwork {
 	norm := distuv.Normal{
 		Mu:    0,
 		Sigma: config.GaussStdDev,
 	}
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	p := createStartingPopulation(header, config.PopSize, config.NNArchitecture)
 	evaluate(p, header, data)
@@ -27,17 +30,17 @@ func RunGeneticAlgorithm(header []string, data [][]float64, config *Config) *Neu
 		}
 		pNew := applyElitism(p, config.Elitism)
 		for len(pNew) < config.PopSize {
-			p1, p2 := selectParents(p, random)
-			c := crossAndMutate(p1, p2, config.ChromosomeChangeProb, norm, random)
+			p1, p2 := selectParents(p)
+			c := crossAndMutate(p1, p2, config.ChromosomeChangeProb, norm)
 			pNew = append(pNew, c)
 		}
 		p = pNew
 		evaluate(p, header, data)
 	}
-	nn := *bestIn(p)
-	fmt.Printf("Train error @%v: %v\n", config.Iterations, bestIn(p).Mse)
+	nn := bestIn(p)
+	fmt.Printf("Train error @%v: %v\n", config.Iterations, nn.Mse)
 
-	return &nn
+	return nn
 }
 
 func createStartingPopulation(header []string, popSize int, arch string) []*NeuralNetwork {
@@ -99,19 +102,19 @@ func applyElitism(p []*NeuralNetwork, elitism int) []*NeuralNetwork {
 	return elite
 }
 
-func selectParents(p []*NeuralNetwork, random *rand.Rand) (*NeuralNetwork, *NeuralNetwork) {
+func selectParents(p []*NeuralNetwork) (*NeuralNetwork, *NeuralNetwork) {
 	sum := 0.0
 	for _, nn := range p {
 		sum += 1 / nn.Mse
 	}
 
-	parent1 := rouletteWheelSelection(p, random, sum)
-	parent2 := rouletteWheelSelection(p, random, sum)
+	parent1 := rouletteWheelSelection(p, sum)
+	parent2 := rouletteWheelSelection(p, sum)
 
 	return parent1, parent2
 }
 
-func rouletteWheelSelection(p []*NeuralNetwork, random *rand.Rand, sum float64) *NeuralNetwork {
+func rouletteWheelSelection(p []*NeuralNetwork, sum float64) *NeuralNetwork {
 	randomNumber := random.Float64() * sum
 	checkSum := 0.0
 	i := -1
@@ -123,7 +126,7 @@ func rouletteWheelSelection(p []*NeuralNetwork, random *rand.Rand, sum float64) 
 	return p[i]
 }
 
-func crossAndMutate(p1 *NeuralNetwork, p2 *NeuralNetwork, prob float64, norm distuv.Normal, random *rand.Rand) *NeuralNetwork {
+func crossAndMutate(p1 *NeuralNetwork, p2 *NeuralNetwork, prob float64, norm distuv.Normal) *NeuralNetwork {
 	weights := make([]*mat.Dense, len(p1.Weights))
 	biases := make([]*mat.Dense, len(p1.Biases))
 	preCalc := make([]*mat.Dense, len(p1.PreCalc))
